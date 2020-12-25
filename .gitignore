@@ -1,0 +1,28 @@
+# IntelliJ project files 
+*.iml
+*.iws
+*.ipr
+.idea/
+*.versionsBackup
+
+# eclipse project file
+.settings/
+.classpath
+.project
+.metadata
+.factorypath
+.vscode/
+bin/
+tmp/
+
+# NetBeans specific
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Maven 
+target/
