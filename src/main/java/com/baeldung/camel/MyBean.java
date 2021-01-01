@@ -12,6 +12,8 @@ public class MyBean {
 
     private Integer id;
     private String name;
+    private String secret;
+    
     public Integer getId() {
         return id;
     }
@@ -23,6 +25,13 @@ public class MyBean {
     }
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+    public void setSecret(String secret) {
+        this.secret = secret;
     }
 
     public String saySomething() {

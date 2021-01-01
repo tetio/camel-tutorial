@@ -1,5 +1,7 @@
 package com.baeldung.camel;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.ws.rs.core.MediaType;
 
 import org.apache.camel.Exchange;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestRoutes extends RouteBuilder {
 
+    volatile static AtomicReference<String> cache = new AtomicReference<>();
+
     @Value("${server.port}")
     String serverPort;
 
@@ -22,7 +26,6 @@ public class TestRoutes extends RouteBuilder {
 
     @Override
     public void configure() {
-
 
         // from("timer:hello?period={{timer.period}}").routeId("hello")
         // .transform().method("myBean", "saySomething")
@@ -43,52 +46,71 @@ public class TestRoutes extends RouteBuilder {
          * to use binding if you develop POJOs that maps to your REST services request
          * and response types.
          */
-        rest("/api/").description("Hello REST Service").id("hello-route").get("/hello")
-                .produces(MediaType.APPLICATION_JSON).consumes(MediaType.APPLICATION_JSON)
-                // .get("/hello/{place}")
-                .bindingMode(RestBindingMode.auto).type(MyBean.class).enableCORS(true)
-                // .outType(OutBean.class)
-                .to("direct:helloService");
+        rest("/api/").description("Hello REST Service")
+            .id("hello-route")
+            .get("/hello")
+            .produces(MediaType.APPLICATION_JSON)
+            .consumes(MediaType.APPLICATION_JSON)
+            // .get("/hello/{place}")
+            .bindingMode(RestBindingMode.auto)
+            .type(MyBean.class)
+            .enableCORS(true)
+            // .outType(OutBean.class)
+            .to("direct:helloService");
         ;
 
-        rest("/api/").description("Teste REST Service").id("api-route").post("/bean")
-                .produces(MediaType.APPLICATION_JSON).consumes(MediaType.APPLICATION_JSON)
-                // .get("/hello/{place}")
-                .bindingMode(RestBindingMode.auto).type(MyBean.class).enableCORS(true)
-                // .outType(OutBean.class)
-                .to("direct:remoteService");
+        rest("/api/")
+            .description("Teste REST Service")
+            .id("api-route")
+            .post("/bean")
+            .produces(MediaType.APPLICATION_JSON)
+            .consumes(MediaType.APPLICATION_JSON)
+            // .get("/hello/{place}")
+            .bindingMode(RestBindingMode.auto)
+            .type(MyBean.class)
+            .enableCORS(true)
+            // .outType(OutBean.class)
+            .to("direct:remoteService");
 
         from("direct:remoteService").routeId("direct-route").tracing().log(">>> ${body.id}").log(">>> ${body.name}")
                 .setExchangePattern(ExchangePattern.InOnly)
                 // .transform().simple("blue ${in.body.name}")
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        MyBean bodyIn = (MyBean) exchange.getIn().getBody();
+                // .process(new Processor() {
+                //     @Override
+                //     public void process(Exchange exchange) throws Exception {
+                //         MyBean bodyIn = (MyBean) exchange.getIn().getBody();
 
-                        ExampleServices.example(bodyIn);
+                //         ExampleServices.example(bodyIn);
 
-                        exchange.getIn().setBody(bodyIn);
-                    }
+                //         exchange.getIn().setBody(bodyIn);
+                //     }
+                // })
+                .process(exchange -> {
+                    MyBean bodyIn = (MyBean) exchange.getIn().getBody();
+                    ExampleServices.example(bodyIn, cache.get());
+                    exchange.getIn().setBody(bodyIn);      
                 })
                 // .toD("jms:queue:TEST_TRADELENS?exchangePattern=InOnly&messageConverter=#myBeanJsonMessageConverter")
                 .toD("jms:queue:TEST_TRADELENS?messageConverter=#myBeanJsonMessageConverter")
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(201));
 
-        from("direct:helloService").routeId("hello-direct-route").tracing().log(">>> Hello").process(new Processor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                exchange.getIn().setBody("<h1>Hello!<h1>");
-            }
-        })
-                // .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(200));
-                .toD("jms:queue:TEST_TRADELENS?exchangePattern=InOnly");
+        from("direct:helloService").routeId("hello-direct-route").tracing().log(">>> Hello")
+            .process(exchange -> {
+                //cache.set(exchange.getIn().getBody(String.class)));
+                cache.set(exchange.getIn().getHeader("s3cr3t", String.class));
+                exchange.getIn().setBody("<h1>secret saved! <h1>");
 
-        rest().post("/message").route().routeId("PUBLISH_EVENT_RECEPTION")
-                .log(LoggingLevel.INFO, "Inside PUBLISH_EVENT_RECEPTION").filter(simple("${body} contains 'foo'"))
-                .to("log:foo").end().toD("jms:queue:TEST_TRADELENS")
-                // + "?messageConverter=#messageJsonMessageConverter"
-                // + "&headerFilterStrategy=#removeAllHeaderFilterStrategy")
-                .endRest();
+            })
+            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(200));
+            //.toD("jms:queue:TEST_TRADELENS?exchangePattern=InOnly");
+
+        rest().post("/message")
+            .route()
+            .routeId("PUBLISH_EVENT_RECEPTION")
+            .log(LoggingLevel.INFO, "Inside PUBLISH_EVENT_RECEPTION").filter(simple("${body} contains 'foo'"))
+            .to("log:foo").end().toD("jms:queue:TEST_TRADELENS")
+            // + "?messageConverter=#messageJsonMessageConverter"
+            // + "&headerFilterStrategy=#removeAllHeaderFilterStrategy")
+            .endRest();
     }
 }

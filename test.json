@@ -1,0 +1,14 @@
+{
+    "originatorName": "Portic Barcelona",
+    "originatorId": "Portic-Barcelona",
+    "eventSubmissionTime8601": "2020-12-24T10:47:00.000-05:00",
+    "transportEquipmentId": "",
+    "transportEquipmentRef": "",
+    "equipmentNumber": "TCKU3176123",
+    "carrierBookingNumber": "",
+    "billOfLadingNumber": "207223560",
+    "eventOccurrenceTime8601": "2020-12-24T10:01:00.000-05:00",
+    "location": {
+        "unlocode": "ESBCN"
+    }
+}

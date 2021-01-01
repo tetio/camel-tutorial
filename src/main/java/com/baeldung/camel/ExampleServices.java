@@ -8,8 +8,9 @@ package com.baeldung.camel;
  */
 public class ExampleServices {
 
-    public static void example(MyBean bodyIn) {
+    public static void example(MyBean bodyIn, String secret) {
         bodyIn.setName( "Hello, " + bodyIn.getName() );
         bodyIn.setId(bodyIn.getId()*10);
+        bodyIn.setSecret(secret);
     }
 }
